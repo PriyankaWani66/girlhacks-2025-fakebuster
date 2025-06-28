@@ -1,0 +1,2 @@
+# Ignore the .env file in the prediction folder
+prediction/.env 
