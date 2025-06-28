@@ -154,6 +154,16 @@ async function detectImages() {
                 const score = await detectImageAI(imgUrl);
                 createDetectionIndicator(score, img);
                 
+                // Save scan to history
+                await saveScanToHistory({
+                    url: window.location.href,
+                    timestamp: new Date().toISOString(),
+                    result: score >= THRESHOLDS.LIKELY_FAKE ? 'fake' : 'real',
+                    confidence: score,
+                    type: 'image',
+                    sourceUrl: imgUrl
+                });
+                
             } catch (error) {
                 console.error('Error processing image:', error);
             }
@@ -207,6 +217,33 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
     return true; // Required for async sendResponse
 });
+
+// Save scan to history
+async function saveScanToHistory(scanData) {
+    try {
+        const data = await chrome.storage.sync.get(['scanHistory', 'stats']);
+        const history = data.scanHistory || [];
+        const stats = data.stats || { totalScans: 0, fakeDetections: 0 };
+        
+        // Add new scan to history
+        history.push(scanData);
+        
+        // Update stats
+        stats.totalScans = (stats.totalScans || 0) + 1;
+        if (scanData.result === 'fake') {
+            stats.fakeDetections = (stats.fakeDetections || 0) + 1;
+        }
+        
+        // Save updated history and stats
+        await chrome.storage.sync.set({
+            scanHistory: history,
+            stats: stats
+        });
+        
+    } catch (error) {
+        console.error('Error saving scan to history:', error);
+    }
+}
 
 // ===================
 // TEXT DETECTION POPUP (From context menu trigger)

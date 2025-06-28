@@ -47,6 +47,9 @@
       "resources": [
         "popup.html",
         "popup.js",
+        "popup.css",
+        "stats.html",
+        "stats.js",
         "config.js",
         "icons/*.png",
         "content.css"
