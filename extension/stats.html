@@ -1,63 +1,51 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="UTF-8">
-  <title>Fake Buster - Statistics</title>
-  <style>
-    @import url('popup.css');
-    @import url('stats.css');
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>Fake Buster Statistics</h1>
-    <p class="subtitle">Your complete scanning history and analysis</p>
-  </div>
-  
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-value" id="total-scans">0</div>
-      <div class="stat-label">Total Scans</div>
+  <head>
+    <meta charset="UTF-8" />
+    <title>My Stats - Fake Buster</title>
+    <style>
+      @import url("popup.css");
+      @import url("stats.css");
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>Welcome!</h1>
+      <p class="subtitle">This is your complete scanning historys with <b>Fake Buster</b></p>
     </div>
-    <div class="stat-card">
-      <div class="stat-value" id="fake-detections">0</div>
-      <div class="stat-label">Fake Detections</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value" id="accuracy">0%</div>
-      <div class="stat-label">Detection Accuracy</div>
-    </div>
-  </div>
-  
-  <div class="chart-container">
-    <h3>Weekly Activity</h3>
-    <div class="chart-placeholder">
-      Chart visualization will be displayed here
-    </div>
-  </div>
-  
-  <div class="recent-scans">
-    <h3>Recent Scans</h3>
-    <table class="scan-table">
-      <thead>
-        <tr>
-          <th>Date & Time</th>
-          <th>URL</th>
-          <th>Result</th>
-          <th>Confidence</th>
-        </tr>
-      </thead>
-      <tbody id="scan-history">
-        <!-- Will be populated by JavaScript -->
-      </tbody>
-    </table>
-  </div>
-  
-  <div class="footer">
-    <a href="popup.html" class="back-button">← Back to Dashboard</a>
-    <p>Fake Buster &copy; 2025 | Keep it real!</p>
-  </div>
 
-  <script src="stats.js"></script>
-</body>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="total-scans">0</div>
+        <div class="stat-label">Total Scans</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="fake-detections">0</div>
+        <div class="stat-label">Fake Detections</div>
+      </div>
+    </div>
+
+    <div class="recent-scans">
+      <h3>Recent Scans</h3>
+      <table class="scan-table">
+        <thead>
+          <tr>
+            <th>Date & Time</th>
+            <th>URL</th>
+            <th>Result</th>
+            <th>Confidence</th>
+          </tr>
+        </thead>
+        <tbody id="scan-history">
+          <!-- Will be populated by JavaScript -->
+        </tbody>
+      </table>
+    </div>
+
+    <div class="footer">
+      <p>Fake Buster | Keeping it real!</p>
+    </div>
+
+    <script src="stats.js"></script>
+  </body>
 </html>

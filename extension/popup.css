@@ -1,8 +1,8 @@
 :root {
-  --primary-color: #4a6fa5;
-  --success-color: #4caf50;
-  --warning-color: #ff9800;
-  --danger-color: #f44336;
+  --primary-color: #33c7b3;
+  --success-color: lightgreen;
+  --warning-color: orange;
+  --danger-color: red;
   --border-radius: 8px;
   --box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
