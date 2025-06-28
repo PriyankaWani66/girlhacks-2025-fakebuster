@@ -4,84 +4,209 @@ console.log("✅ Fake Buster: content.js loaded");
 // IMAGE DETECTION
 // ===================
 
-const detectionEndpoint = "http://localhost:5000/detect-image"; // Change when deployed
+// Load configuration
+const config = window.FakeBusterConfig || {
+    API: { 
+        BASE_URL: 'http://localhost:5000', 
+        ENDPOINTS: { 
+            DETECT_IMAGE: '/detect-image',
+            DETECT_TEXT: '/detect-text'
+        }
+    },
+    THRESHOLDS: { 
+        LIKELY_REAL: 0.3, 
+        LIKELY_FAKE: 0.8 
+    },
+    DEBUG: true
+};
 
+const { API, THRESHOLDS, DEBUG } = config;
+
+/**
+ * Detects if an image is AI-generated using the backend API
+ * @param {string} imgUrl - The URL of the image to analyze
+ * @returns {Promise<number>} - A score between 0 (real) and 1 (fake)
+ */
 async function detectImageAI(imgUrl) {
-  try {
-    const res = await fetch(detectionEndpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url: imgUrl }),
-    });
-    const data = await res.json();
-    return data?.deepfake ?? 0.5;
-  } catch (err) {
-    console.error("API call failed:", err);
-    return 0.5; // fallback
-  }
+    if (DEBUG) {
+        console.log(`Analyzing image: ${imgUrl.substring(0, 50)}...`);
+    }
+    
+    try {
+        const response = await fetch(`${API.BASE_URL}${API.ENDPOINTS.DETECT_IMAGE}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image_url: imgUrl })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`API request failed with status ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const score = data?.deepfake ?? 0.5; // Default to 0.5 if no score is returned
+        
+        if (DEBUG) {
+            console.log(`Image analysis result: ${(score * 100).toFixed(1)}% likely fake`);
+        }
+        
+        return score;
+    } catch (error) {
+        console.error('Error detecting image:', error);
+        return 0.5; // Fallback to neutral score on error
+    }
 }
 
-function detectImages() {
-  chrome.storage.sync.get("detectionEnabled", (data) => {
-    if (!data.detectionEnabled) return;
-
-    const images = document.querySelectorAll("img[src]:not([data-fb-checked])");
-
-    images.forEach(async (img) => {
-      img.setAttribute("data-fb-checked", "true");
-
-      const imgUrl = img.currentSrc || img.src;
-      if (!imgUrl) return;
-
-      // Mock score for testing
-      const score = 0.87;
-      // const score = await detectImageAI(imgUrl); // Uncomment for real API
-
-      const popup = document.createElement("div");
-      let icon = "", color = "";
-      if (score < 0.3) {
-        icon = "✅";
-        color = "#008000";
-      } else if (score < 0.8) {
-        icon = "⚠️";
-        color = "#FFA500";
-      } else {
-        icon = "❌";
-        color = "#c00";
-      }
-
-      popup.innerHTML = `
-        <span style="color: ${color}; font-weight: bold;">${icon} ${Math.round(score * 100)}% likely AI</span>
-        <button style="margin-left:6px;">Flag</button>
-      `;
-
-      popup.style.position = "absolute";
-      popup.style.background = "#fff";
-      popup.style.border = "1px solid black";
-      popup.style.padding = "2px 6px";
-      popup.style.fontSize = "10px";
-      popup.style.zIndex = 9999;
-
-      const rect = img.getBoundingClientRect();
-      popup.style.top = `${rect.top + window.scrollY + 5}px`;
-      popup.style.left = `${rect.left + window.scrollX + 5}px`;
-
-      popup.querySelector("button").onclick = () => {
-        const btn = popup.querySelector("button");
-        const flagged = btn.textContent === "Unflag";
-        btn.textContent = flagged ? "Flag" : "Unflag";
-        btn.style.backgroundColor = flagged ? "#fff" : "#ffc0cb";
-      };
-
-      document.body.appendChild(popup);
-    });
-  });
+/**
+ * Creates a visual indicator for the detection result
+ * @param {number} score - The detection score (0-1)
+ * @param {HTMLElement} img - The image element
+ */
+function createDetectionIndicator(score, img) {
+    let icon, color, label;
+    
+    if (score < THRESHOLDS.LIKELY_REAL) {
+        icon = '✅';
+        color = '#008000';
+        label = 'Real';
+    } else if (score < THRESHOLDS.LIKELY_FAKE) {
+        icon = '⚠️';
+        color = '#FFA500';
+        label = 'Suspicious';
+    } else {
+        icon = '❌';
+        color = '#c00';
+        label = 'Fake';
+    }
+    
+    const percentage = Math.round(score * 100);
+    const indicator = document.createElement('div');
+    
+    indicator.innerHTML = `
+        <div style="position: absolute; 
+                   background: rgba(255, 255, 255, 0.9); 
+                   border: 2px solid ${color}; 
+                   border-radius: 4px; 
+                   padding: 4px 8px; 
+                   z-index: 9999; 
+                   pointer-events: none;
+                   transform: translate(-50%, -100%); 
+                   top: -10px; 
+                   left: 50%;
+                   font-size: 12px; 
+                   color: ${color}; 
+                   font-weight: bold;
+                   white-space: nowrap;
+                   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                   backdrop-filter: blur(2px);">
+            ${icon} ${label} (${percentage}%)
+        </div>
+    `;
+    
+    const wrapper = document.createElement('div');
+    wrapper.style.position = 'relative';
+    wrapper.style.display = 'inline-block';
+    wrapper.style.lineHeight = '0';
+    
+    // Insert the wrapper before the image, and move the image into the wrapper
+    if (img.parentNode) {
+        img.parentNode.insertBefore(wrapper, img);
+        wrapper.appendChild(img);
+        wrapper.appendChild(indicator);
+    }
+    
+    return wrapper;
 }
 
-// Run on load and scroll
-detectImages();
-window.addEventListener("scroll", () => setTimeout(detectImages, 1000));
+/**
+ * Scans the page for images and analyzes them
+ */
+async function detectImages() {
+    try {
+        const { detectionEnabled } = await chrome.storage.sync.get('detectionEnabled');
+        if (!detectionEnabled) return;
 
+        const images = document.querySelectorAll('img[src]:not([data-fb-checked])');
+        if (DEBUG) {
+            console.log(`Found ${images.length} new images to analyze`);
+        }
+
+        for (const img of images) {
+            try {
+                // Mark as processed to avoid duplicates
+                img.setAttribute('data-fb-checked', 'true');
+                
+                // Skip tiny images and data URIs
+                const imgUrl = img.currentSrc || img.src;
+                if (!imgUrl || imgUrl.startsWith('data:') || 
+                    img.naturalWidth < 50 || img.naturalHeight < 50) {
+                    continue;
+                }
+                
+                // Only process visible images
+                const style = window.getComputedStyle(img);
+                if (style.display === 'none' || style.visibility === 'hidden' || 
+                    style.opacity === '0' || img.offsetParent === null) {
+                    continue;
+                }
+                
+                // Process the image
+                const score = await detectImageAI(imgUrl);
+                createDetectionIndicator(score, img);
+                
+            } catch (error) {
+                console.error('Error processing image:', error);
+            }
+        }
+    } catch (error) {
+        console.error('Error in detectImages:', error);
+    }
+}
+
+// Run detection when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    detectImages();
+    
+    // Also run detection when images are loaded dynamically
+    const observer = new MutationObserver((mutations) => {
+        let shouldCheck = false;
+        
+        for (const mutation of mutations) {
+            if (mutation.addedNodes.length > 0) {
+                shouldCheck = true;
+                break;
+            }
+        }
+        
+        if (shouldCheck) {
+            // Debounce to avoid too many checks
+            clearTimeout(window.fakeBusterCheckTimeout);
+            window.fakeBusterCheckTimeout = setTimeout(detectImages, 500);
+        }
+    });
+    
+    // Start observing the document with the configured parameters
+    observer.observe(document.body, { 
+        childList: true, 
+        subtree: true 
+    });
+    
+    // Also check on scroll (with debouncing)
+    let scrollTimeout;
+    window.addEventListener('scroll', () => {
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(detectImages, 500);
+    }, { passive: true });
+});
+
+// Listen for messages from the popup
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === 'detectImages') {
+        detectImages();
+        sendResponse({ status: 'success' });
+    }
+    return true; // Required for async sendResponse
+});
 
 // ===================
 // TEXT DETECTION POPUP (From context menu trigger)

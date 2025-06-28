@@ -1,33 +1,56 @@
 {
   "manifest_version": 3,
   "name": "Fake Buster",
-  "version": "1.0",
+  "description": "Detect AI-generated images and text with advanced analysis",
+  "version": "1.0.0",
   "permissions": [
     "storage",
     "contextMenus",
     "scripting",
-    "activeTab"
+    "activeTab",
+    "tabs"
   ],
-   "host_permissions": [
+  "host_permissions": [
     "http://127.0.0.1:8000/*",
+    "http://localhost:5000/*",
+    "https://api.sightengine.com/*",
     "<all_urls>"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"]
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
     }
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Fake Buster"
+    "default_title": "Fake Buster",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   },
   "web_accessible_resources": [
     {
-      "resources": ["popup.html", "popup.js"],
+      "resources": [
+        "popup.html",
+        "popup.js",
+        "config.js",
+        "icons/*.png",
+        "content.css"
+      ],
       "matches": ["<all_urls>"]
     }
   ]

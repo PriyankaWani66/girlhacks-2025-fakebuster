@@ -1,0 +1,130 @@
+/* Content script styles for Fake Buster */
+
+/* Image wrapper for detection indicators */
+.fake-buster-wrapper {
+    position: relative;
+    display: inline-block;
+    line-height: 0;
+    max-width: 100%;
+}
+
+/* Detection indicator */
+.fake-buster-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10000;
+    pointer-events: none;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    text-align: center;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transform: translateY(-100%);
+    opacity: 0.95;
+    transition: opacity 0.2s ease;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(4px);
+}
+
+/* Real indicator (low AI probability) */
+.fake-buster-indicator.real {
+    background-color: rgba(76, 175, 80, 0.9); /* Green */
+    color: white;
+}
+
+/* Suspicious indicator (medium AI probability) */
+.fake-buster-indicator.suspicious {
+    background-color: rgba(255, 193, 7, 0.9); /* Amber */
+    color: #333;
+}
+
+/* Fake indicator (high AI probability) */
+.fake-buster-indicator.fake {
+    background-color: rgba(244, 67, 54, 0.9); /* Red */
+    color: white;
+}
+
+/* Loading state */
+.fake-buster-indicator.loading {
+    background-color: rgba(33, 150, 243, 0.9); /* Blue */
+    color: white;
+}
+
+/* Image highlight effect */
+img[data-fb-checked="true"] {
+    transition: box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+img[data-fb-checked="true"]:hover {
+    transform: scale(1.01);
+    z-index: 1000;
+}
+
+/* Real image highlight */
+img[data-fb-checked="true"][data-fb-status="real"] {
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.5);
+}
+
+/* Suspicious image highlight */
+img[data-fb-checked="true"][data-fb-status="suspicious"] {
+    box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.5);
+}
+
+/* Fake image highlight */
+img[data-fb-checked="true"][data-fb-status="fake"] {
+    box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.5);
+}
+
+/* Tooltip styles */
+.fake-buster-tooltip {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 10001;
+    max-width: 250px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    transform: translate(-50%, -100%);
+    top: -10px;
+    left: 50%;
+    text-align: center;
+    backdrop-filter: blur(4px);
+}
+
+.fake-buster-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
+}
+
+/* Animation for the tooltip */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translate(-50%, -90%); }
+    to { opacity: 1; transform: translate(-50%, -100%); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .fake-buster-indicator {
+        font-size: 10px;
+        padding: 2px 4px;
+    }
+    
+    .fake-buster-tooltip {
+        max-width: 180px;
+        font-size: 10px;
+    }
+}
