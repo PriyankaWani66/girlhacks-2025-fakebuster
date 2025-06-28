@@ -50,6 +50,7 @@
         "popup.css",
         "stats.html",
         "stats.js",
+        "stats.css",
         "config.js",
         "icons/*.png",
         "content.css"
