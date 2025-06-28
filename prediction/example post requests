@@ -1,0 +1,13 @@
+import requests
+
+# Example: call detect-image
+resp = requests.post("http://127.0.0.1:8000/detect-image", json={
+    "image_url": "https://example.com/someimage.jpg"
+})
+print(resp.json())
+
+# Example: call detect-text
+resp = requests.post("http://127.0.0.1:8000/detect-text", json={
+    "text_str": "This is a fake news headline"
+})
+print(resp.json())
