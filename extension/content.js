@@ -4,23 +4,21 @@ console.log("✅ Fake Buster: content.js loaded");
 // IMAGE DETECTION
 // ===================
 
-const detectionEndpoint = "http://localhost:5000/detect-image"; // Change when deployed
 
 async function detectImageAI(imgUrl) {
-  try {
-    const res = await fetch(detectionEndpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url: imgUrl }),
-    });
-    const data = await res.json();
-    return data?.deepfake ?? 0.5;
-  } catch (err) {
-    console.error("API call failed:", err);
-    return 0.5; // fallback
-  }
+    return new Promise((resolve) => {
+    chrome.runtime.sendMessage(
+      { action: "detectImage", url: imgUrl },
+      (response) => {
+        console.log("🎯 Raw response from background.js:", response);
+        console.log("🐛 Image score received:", response?.score);
+        resolve(response?.score ?? 0.5); // fallback
+      }
+    );
+  });
 }
 
+const checkedImages = new Set();
 function detectImages() {
   chrome.storage.sync.get("detectionEnabled", (data) => {
     if (!data.detectionEnabled) return;
@@ -28,14 +26,12 @@ function detectImages() {
     const images = document.querySelectorAll("img[src]:not([data-fb-checked])");
 
     images.forEach(async (img) => {
-      img.setAttribute("data-fb-checked", "true");
-
       const imgUrl = img.currentSrc || img.src;
-      if (!imgUrl) return;
-
-      // Mock score for testing
-      const score = 0.87;
-      // const score = await detectImageAI(imgUrl); // Uncomment for real API
+      if (!imgUrl || checkedImages.has(imgUrl)) return;
+      checkedImages.add(imgUrl); // mark as checked
+      img.setAttribute("data-fb-checked", "true");
+      const score = await detectImageAI(imgUrl); 
+      
 
       const popup = document.createElement("div");
       let icon = "", color = "";
@@ -78,9 +74,20 @@ function detectImages() {
   });
 }
 
+// Run once when the page fully loads
+window.addEventListener("load", () => {
+  detectImages();
+});
+
+
 // Run on load and scroll
-detectImages();
-window.addEventListener("scroll", () => setTimeout(detectImages, 1000));
+let scrollTimeout;
+window.addEventListener("scroll", () => {
+  clearTimeout(scrollTimeout);
+  scrollTimeout = setTimeout(() => {
+    detectImages();
+  }, 1000); // adjust delay as needed
+});
 
 
 // ===================

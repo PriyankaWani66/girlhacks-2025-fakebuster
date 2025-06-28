@@ -32,12 +32,19 @@ async def detect_image(image_url: str = Body(..., embed=True)):
 
     r = requests.get('https://api.sightengine.com/1.0/check.json', params=params)
     output = r.json()
-    return output.get("type", "unknown")
+    deepfake_score = output.get("type", {}).get("deepfake", 0.5)
+    print(output)
+    print(deepfake_score)
+    return { "deepfake_score": deepfake_score }
+    
+    
 
 @app.post("/detect-text")
 async def detect_text(text_str: str = Body(..., embed=True)):
+    print("Received text:", text_str)  # DEBUG: log input text
     client = Client("SzegedAI/AI_Detector")
     result = client.predict(text=text_str, api_name="/classify_text")
+    print("Raw model response:", result)  # DEBUG: raw output
     clean_text = re.sub(r"<.*?>", "", result)
     clean_text = re.sub(r"\*\*", "", clean_text)
     clean_text = clean_text.strip()
@@ -49,5 +56,7 @@ async def detect_text(text_str: str = Body(..., embed=True)):
     else:
         pred = clean_text
         llm_result = "No LLM analysis found"
-    
+
+    final_response = {"result": pred, "LLM": llm_result}
+    print("Returning response:", final_response)  # DEBUG: final output
     return {"result": pred, "LLM": llm_result}
