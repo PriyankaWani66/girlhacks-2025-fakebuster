@@ -11,17 +11,30 @@
   <body>
     <div class="header">
       <h1>Welcome!</h1>
-      <p class="subtitle">This is your complete scanning historys with <b>Fake Buster</b></p>
+      <p class="subtitle">This is your complete scanning history with <b>Fake Buster</b></p>
     </div>
 
     <div class="stats-grid">
       <div class="stat-card">
-        <div class="stat-value" id="total-scans">0</div>
+        <div class="stat-value" id="total-detections">
+          <div class="loading-spinner"></div>
+          <span class="stat-number"></span>
+        </div> 
         <div class="stat-label">Total Scans</div>
       </div>
       <div class="stat-card">
-        <div class="stat-value" id="fake-detections">0</div>
-        <div class="stat-label">Fake Detections</div>
+        <div class="stat-value" id="fake-image-count">
+          <div class="loading-spinner"></div>
+          <span class="stat-number"></span>
+        </div>
+        <div class="stat-label">Fake Images Detected</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="fake-text-count">
+          <div class="loading-spinner"></div>
+          <span class="stat-number"></span>
+        </div>
+        <div class="stat-label">AI-generated Texts Detected</div>
       </div>
     </div>
 

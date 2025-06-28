@@ -9,22 +9,90 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Load and display scan history
     const scanHistory = await loadScanHistory();
     updateScanHistoryUI(scanHistory);
+    
+    // Request current counts from the active tab's content script
+    requestCountsFromActiveTab();
 });
+
+// Request current counts from the active tab's content script
+async function requestCountsFromActiveTab() {
+    try {
+        // Get the active tab
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        
+        if (tab) {
+            // Send a message to the content script to get current counts
+            chrome.tabs.sendMessage(tab.id, { action: 'getDetectionCounts' }, (response) => {
+                if (chrome.runtime.lastError) {
+                    // Handle the case where the content script might not be loaded
+                    console.log('Could not get counts from content script:', chrome.runtime.lastError.message);
+                    return;
+                }
+                
+                if (response) {
+                    // Update the UI with the received counts
+                    updateCountsUI(response);
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Error requesting counts from active tab:', error);
+    }
+}
+
+// Update the UI with the latest counts
+function updateCountsUI(counts) {
+    const updateStat = (elementId, value) => {
+        const container = document.getElementById(elementId);
+        if (!container) return;
+        
+        const numberElement = container.querySelector('.stat-number');
+        if (numberElement) {
+            numberElement.textContent = value !== undefined ? value : '0';
+            // Add 'loaded' class to trigger the fade-in animation
+            requestAnimationFrame(() => {
+                container.classList.add('loaded');
+            });
+        }
+    };
+
+    updateStat('total-detections', counts.totalDetectionCount);
+    updateStat('fake-image-count', counts.totalFakeImageCount);
+    updateStat('fake-text-count', counts.totalFakeTextCount);
+}
 
 // Load statistics from chrome.storage
 async function loadStatistics() {
     try {
-        const data = await chrome.storage.sync.get(['stats']);
-        return data.stats || {
+        // Get both the old stats and the new counters
+        const [statsData, countersData] = await Promise.all([
+            chrome.storage.sync.get(['stats']),
+            chrome.storage.sync.get(['detectionCounters'])
+        ]);
+
+        // If we have the new counters, use them
+        if (countersData.detectionCounters) {
+            return {
+                totalScans: countersData.detectionCounters.total || 0,
+                fakeImageCount: countersData.detectionCounters.fakeImages || 0,
+                fakeTextCount: countersData.detectionCounters.fakeTexts || 0,
+                lastUpdated: new Date().toISOString()
+            };
+        }
+        
+        // Fall back to old stats if new counters don't exist
+        return statsData.stats || {
             totalScans: 0,
-            fakeDetections: 0,
+            fakeImageCount: 0,
+            fakeTextCount: 0,
             lastUpdated: null
         };
     } catch (error) {
         console.error('Error loading statistics:', error);
         return {
             totalScans: 0,
-            fakeDetections: 0,
+            fakeImageCount: 0,
+            fakeTextCount: 0,
             lastUpdated: null
         };
     }
@@ -43,15 +111,40 @@ async function loadScanHistory() {
 
 // Update the statistics UI
 function updateStatsUI(stats) {
-    // Update the stats cards
-    document.getElementById('total-scans').textContent = stats.totalScans || 0;
-    document.getElementById('fake-detections').textContent = stats.fakeDetections || 0;
+    // Update the stats cards with stored values
+    const updateStat = (elementId, value) => {
+        const container = document.getElementById(elementId);
+        if (!container) return;
+        
+        const numberElement = container.querySelector('.stat-number');
+        if (numberElement) {
+            // Format large numbers with commas
+            const formattedValue = value !== undefined ? value.toLocaleString() : '0';
+            numberElement.textContent = formattedValue;
+            
+            // Add 'loaded' class to trigger the fade-in animation
+            requestAnimationFrame(() => {
+                container.classList.add('loaded');
+            });
+        }
+    };
+
+    // Ensure we have valid numbers (handle undefined/NaN cases)
+    const totalScans = Number.isInteger(stats.totalScans) ? stats.totalScans : 0;
+    const fakeImageCount = Number.isInteger(stats.fakeImageCount) ? stats.fakeImageCount : 0;
+    const fakeTextCount = Number.isInteger(stats.fakeTextCount) ? stats.fakeTextCount : 0;
+
+    updateStat('total-detections', totalScans);
+    updateStat('fake-image-count', fakeImageCount);
+    updateStat('fake-text-count', fakeTextCount);
     
     // Calculate and display accuracy percentage
-    const accuracy = stats.totalScans > 0 
-        ? Math.round((stats.fakeDetections / stats.totalScans) * 100) 
-        : 0;
-    document.getElementById('accuracy').textContent = `${accuracy}%`;
+    const totalFakes = fakeImageCount + fakeTextCount;
+    const accuracy = totalScans > 0 ? Math.round((totalFakes / totalScans) * 100) : 0;
+    const accuracyElement = document.getElementById('accuracy');
+    if (accuracyElement) {
+        accuracyElement.textContent = `${accuracy}%`;
+    }
 }
 
 // Update the scan history table

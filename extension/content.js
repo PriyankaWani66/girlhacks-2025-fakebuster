@@ -6,21 +6,52 @@ console.log("✅ Fake Buster: content.js loaded");
 
 // Load configuration
 const config = window.FakeBusterConfig || {
-    API: { 
-        BASE_URL: 'http://localhost:5000', 
-        ENDPOINTS: { 
-            DETECT_IMAGE: '/detect-image',
-            DETECT_TEXT: '/detect-text'
-        }
+  API: {
+    BASE_URL: "http://localhost:5000", // TODO: fetch from config
+    ENDPOINTS: {
+      DETECT_IMAGE: "/detect-image",
+      DETECT_TEXT: "/detect-text",
     },
-    THRESHOLDS: { 
-        LIKELY_REAL: 0.3, 
-        LIKELY_FAKE: 0.8 
-    },
-    DEBUG: true
+  },
+  THRESHOLDS: {
+    LIKELY_REAL: 0.3,
+    LIKELY_FAKE: 0.8,
+  },
+  DEBUG: false,
 };
 
 const { API, THRESHOLDS, DEBUG } = config;
+
+// Load counters from storage on initialization
+(async () => {
+  try {
+    const data = await chrome.storage.sync.get(['detectionCounters']);
+    if (data.detectionCounters) {
+      totalDetectionCount = data.detectionCounters.total || 0;
+      totalFakeImageCount = data.detectionCounters.fakeImages || 0;
+      totalFakeTextCount = data.detectionCounters.fakeTexts || 0;
+      if (DEBUG) console.log('Loaded counters from storage:', { totalDetectionCount, totalFakeImageCount, totalFakeTextCount });
+    }
+  } catch (error) {
+    console.error('Error loading counters from storage:', error);
+  }
+})();
+
+// Save counters to storage
+async function saveCounters() {
+  try {
+    await chrome.storage.sync.set({
+      detectionCounters: {
+        total: totalDetectionCount,
+        fakeImages: totalFakeImageCount,
+        fakeTexts: totalFakeTextCount
+      }
+    });
+    if (DEBUG) console.log('Counters saved to storage');
+  } catch (error) {
+    console.error('Error saving counters to storage:', error);
+  }
+}
 
 /**
  * Detects if an image is AI-generated using the backend API
@@ -28,33 +59,38 @@ const { API, THRESHOLDS, DEBUG } = config;
  * @returns {Promise<number>} - A score between 0 (real) and 1 (fake)
  */
 async function detectImageAI(imgUrl) {
+  if (DEBUG) {
+    console.log(`Analyzing image: ${imgUrl.substring(0, 50)}...`);
+  }
+
+  try {
+    const response = await fetch(
+      `${API.BASE_URL}${API.ENDPOINTS.DETECT_IMAGE}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image_url: imgUrl }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    const score = data?.deepfake ?? 0.5; // Default to 0.5 if no score is returned
+
     if (DEBUG) {
-        console.log(`Analyzing image: ${imgUrl.substring(0, 50)}...`);
+      console.log(
+        `Image analysis result: ${(score * 100).toFixed(1)}% likely fake`
+      );
     }
-    
-    try {
-        const response = await fetch(`${API.BASE_URL}${API.ENDPOINTS.DETECT_IMAGE}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image_url: imgUrl })
-        });
-        
-        if (!response.ok) {
-            throw new Error(`API request failed with status ${response.status}`);
-        }
-        
-        const data = await response.json();
-        const score = data?.deepfake ?? 0.5; // Default to 0.5 if no score is returned
-        
-        if (DEBUG) {
-            console.log(`Image analysis result: ${(score * 100).toFixed(1)}% likely fake`);
-        }
-        
-        return score;
-    } catch (error) {
-        console.error('Error detecting image:', error);
-        return 0.5; // Fallback to neutral score on error
-    }
+
+    return score;
+  } catch (error) {
+    console.error("Error detecting image:", error);
+    return 0.5; // Fallback to neutral score on error
+  }
 }
 
 /**
@@ -63,26 +99,33 @@ async function detectImageAI(imgUrl) {
  * @param {HTMLElement} img - The image element
  */
 function createDetectionIndicator(score, img) {
-    let icon, color, label;
-    
-    if (score < THRESHOLDS.LIKELY_REAL) {
-        icon = '✅';
-        color = '#008000';
-        label = 'Real';
-    } else if (score < THRESHOLDS.LIKELY_FAKE) {
-        icon = '⚠️';
-        color = '#FFA500';
-        label = 'Suspicious';
-    } else {
-        icon = '❌';
-        color = '#c00';
-        label = 'Fake';
-    }
-    
-    const percentage = Math.round(score * 100);
-    const indicator = document.createElement('div');
-    
-    indicator.innerHTML = `
+  let icon, color, label;
+
+  if (score < THRESHOLDS.LIKELY_REAL) {
+    icon = "✅";
+    color = "#008000";
+    label = "Real";
+
+  } else if (score < THRESHOLDS.LIKELY_FAKE) {
+    icon = "⚠️";
+    color = "#FFA500";
+    label = "Suspicious";
+    totalFakeImageCount++;
+    totalDetectionCount++;
+    saveCounters();
+  } else {
+    icon = "❌";
+    color = "#c00";
+    label = "Fake";
+    totalFakeImageCount++;
+    totalDetectionCount++;
+    saveCounters();
+  }
+
+  const percentage = Math.round(score * 100);
+  const indicator = document.createElement("div");
+
+  indicator.innerHTML = `
         <div style="position: absolute; 
                    background: rgba(255, 255, 255, 0.9); 
                    border: 2px solid ${color}; 
@@ -102,147 +145,169 @@ function createDetectionIndicator(score, img) {
             ${icon} ${label} (${percentage}%)
         </div>
     `;
-    
-    const wrapper = document.createElement('div');
-    wrapper.style.position = 'relative';
-    wrapper.style.display = 'inline-block';
-    wrapper.style.lineHeight = '0';
-    
-    // Insert the wrapper before the image, and move the image into the wrapper
-    if (img.parentNode) {
-        img.parentNode.insertBefore(wrapper, img);
-        wrapper.appendChild(img);
-        wrapper.appendChild(indicator);
-    }
-    
-    return wrapper;
+
+  const wrapper = document.createElement("div");
+  wrapper.style.position = "relative";
+  wrapper.style.display = "inline-block";
+  wrapper.style.lineHeight = "0";
+
+  // Insert the wrapper before the image, and move the image into the wrapper
+  if (img.parentNode) {
+    img.parentNode.insertBefore(wrapper, img);
+    wrapper.appendChild(img);
+    wrapper.appendChild(indicator);
+  }
+
+  return wrapper;
 }
 
 /**
  * Scans the page for images and analyzes them
  */
 async function detectImages() {
-    try {
-        const { detectionEnabled } = await chrome.storage.sync.get('detectionEnabled');
-        if (!detectionEnabled) return;
+  try {
+    const { detectionEnabled } = await chrome.storage.sync.get(
+      "detectionEnabled"
+    );
+    if (!detectionEnabled) return;
 
-        const images = document.querySelectorAll('img[src]:not([data-fb-checked])');
-        if (DEBUG) {
-            console.log(`Found ${images.length} new images to analyze`);
-        }
-
-        for (const img of images) {
-            try {
-                // Mark as processed to avoid duplicates
-                img.setAttribute('data-fb-checked', 'true');
-                
-                // Skip tiny images and data URIs
-                const imgUrl = img.currentSrc || img.src;
-                if (!imgUrl || imgUrl.startsWith('data:') || 
-                    img.naturalWidth < 50 || img.naturalHeight < 50) {
-                    continue;
-                }
-                
-                // Only process visible images
-                const style = window.getComputedStyle(img);
-                if (style.display === 'none' || style.visibility === 'hidden' || 
-                    style.opacity === '0' || img.offsetParent === null) {
-                    continue;
-                }
-                
-                // Process the image
-                const score = await detectImageAI(imgUrl);
-                createDetectionIndicator(score, img);
-                
-                // Save scan to history
-                await saveScanToHistory({
-                    url: window.location.href,
-                    timestamp: new Date().toISOString(),
-                    result: score >= THRESHOLDS.LIKELY_FAKE ? 'fake' : 'real',
-                    confidence: score,
-                    type: 'image',
-                    sourceUrl: imgUrl
-                });
-                
-            } catch (error) {
-                console.error('Error processing image:', error);
-            }
-        }
-    } catch (error) {
-        console.error('Error in detectImages:', error);
+    const images = document.querySelectorAll("img[src]:not([data-fb-checked])");
+    if (DEBUG) {
+      console.log(`Found ${images.length} new images to analyze`);
     }
+
+    for (const img of images) {
+      try {
+        // Mark as processed to avoid duplicates
+        img.setAttribute("data-fb-checked", "true");
+
+        // Skip tiny images and data URIs
+        const imgUrl = img.currentSrc || img.src;
+        if (
+          !imgUrl ||
+          imgUrl.startsWith("data:") ||
+          img.naturalWidth < 50 ||
+          img.naturalHeight < 50
+        ) {
+          continue;
+        }
+
+        // Only process visible images
+        const style = window.getComputedStyle(img);
+        if (
+          style.display === "none" ||
+          style.visibility === "hidden" ||
+          style.opacity === "0" ||
+          img.offsetParent === null
+        ) {
+          continue;
+        }
+
+        // Process the image
+        const score = await detectImageAI(imgUrl);
+        createDetectionIndicator(score, img);
+
+        // Save scan to history
+        await saveScanToHistory({
+          url: window.location.href,
+          timestamp: new Date().toISOString(),
+          result: score >= THRESHOLDS.LIKELY_FAKE ? "fake" : "real",
+          confidence: score,
+          type: "image",
+          sourceUrl: imgUrl,
+        });
+      } catch (error) {
+        console.error("Error processing image:", error);
+      }
+    }
+  } catch (error) {
+    console.error("Error in detectImages:", error);
+  }
 }
 
 // Run detection when the page loads
-document.addEventListener('DOMContentLoaded', () => {
-    detectImages();
-    
-    // Also run detection when images are loaded dynamically
-    const observer = new MutationObserver((mutations) => {
-        let shouldCheck = false;
-        
-        for (const mutation of mutations) {
-            if (mutation.addedNodes.length > 0) {
-                shouldCheck = true;
-                break;
-            }
-        }
-        
-        if (shouldCheck) {
-            // Debounce to avoid too many checks
-            clearTimeout(window.fakeBusterCheckTimeout);
-            window.fakeBusterCheckTimeout = setTimeout(detectImages, 500);
-        }
-    });
-    
-    // Start observing the document with the configured parameters
-    observer.observe(document.body, { 
-        childList: true, 
-        subtree: true 
-    });
-    
-    // Also check on scroll (with debouncing)
-    let scrollTimeout;
-    window.addEventListener('scroll', () => {
-        clearTimeout(scrollTimeout);
-        scrollTimeout = setTimeout(detectImages, 500);
-    }, { passive: true });
+document.addEventListener("DOMContentLoaded", () => {
+  detectImages();
+
+  // Also run detection when images are loaded dynamically
+  const observer = new MutationObserver((mutations) => {
+    let shouldCheck = false;
+
+    for (const mutation of mutations) {
+      if (mutation.addedNodes.length > 0) {
+        shouldCheck = true;
+        break;
+      }
+    }
+
+    if (shouldCheck) {
+      // Debounce to avoid too many checks
+      clearTimeout(window.fakeBusterCheckTimeout);
+      window.fakeBusterCheckTimeout = setTimeout(detectImages, 500);
+    }
+  });
+
+  // Start observing the document with the configured parameters
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
+
+  // Also check on scroll (with debouncing)
+  let scrollTimeout;
+  window.addEventListener(
+    "scroll",
+    () => {
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(detectImages, 500);
+    },
+    { passive: true }
+  );
 });
 
-// Listen for messages from the popup
+// Listen for messages from the popup and stats page
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === 'detectImages') {
-        detectImages();
-        sendResponse({ status: 'success' });
-    }
-    return true; // Required for async sendResponse
+  if (request.action === "detectImages") {
+    detectImages();
+    sendResponse({ status: "success" });
+  } else if (request.action === "getDetectionCounts") {
+    // Send back the current detection counts
+    sendResponse({
+      totalDetectionCount,
+      totalFakeImageCount,
+      totalFakeTextCount
+    });
+    
+    // Also save counters when they're requested (in case they were updated but not saved yet)
+    saveCounters();
+  }
+  return true; // Required for async sendResponse
 });
 
 // Save scan to history
 async function saveScanToHistory(scanData) {
-    try {
-        const data = await chrome.storage.sync.get(['scanHistory', 'stats']);
-        const history = data.scanHistory || [];
-        const stats = data.stats || { totalScans: 0, fakeDetections: 0 };
-        
-        // Add new scan to history
-        history.push(scanData);
-        
-        // Update stats
-        stats.totalScans = (stats.totalScans || 0) + 1;
-        if (scanData.result === 'fake') {
-            stats.fakeDetections = (stats.fakeDetections || 0) + 1;
-        }
-        
-        // Save updated history and stats
-        await chrome.storage.sync.set({
-            scanHistory: history,
-            stats: stats
-        });
-        
-    } catch (error) {
-        console.error('Error saving scan to history:', error);
+  try {
+    const data = await chrome.storage.sync.get(["scanHistory", "stats"]);
+    const history = data.scanHistory || [];
+    const stats = data.stats || { totalScans: 0, fakeDetections: 0 };
+
+    // Add new scan to history
+    history.push(scanData);
+
+    // Update stats
+    stats.totalScans = (stats.totalScans || 0) + 1;
+    if (scanData.result === "fake") {
+      stats.fakeDetections = (stats.fakeDetections || 0) + 1;
     }
+
+    // Save updated history and stats
+    await chrome.storage.sync.set({
+      scanHistory: history,
+      stats: stats,
+    });
+  } catch (error) {
+    console.error("Error saving scan to history:", error);
+  }
 }
 
 // ===================
@@ -252,6 +317,14 @@ async function saveScanToHistory(scanData) {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "showResult") {
     const result = message.resultText;
+    
+    if (result.toLowerCase().includes('fake') || 
+        result.toLowerCase().includes('artificial') || 
+        result.toLowerCase().includes('ai-generated')) {
+      totalFakeTextCount++;
+      totalDetectionCount++;
+      saveCounters();
+    }
 
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;

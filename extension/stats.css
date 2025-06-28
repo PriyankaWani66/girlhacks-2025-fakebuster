@@ -61,8 +61,42 @@ body {
 .stat-value {
   font-size: 2.5rem;
   font-weight: 700;
+  margin-bottom: 5px;
   color: var(--primary-color);
-  margin: 10px 0;
+  min-height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.stat-number {
+  transition: opacity 0.3s ease;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(51, 199, 179, 0.2);
+  border-radius: 50%;
+  border-top-color: var(--primary-color);
+  animation: spin 1s ease-in-out infinite;
+  position: absolute;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loaded .loading-spinner {
+  opacity: 0;
+}
+
+.loaded .stat-number {
+  opacity: 1;
 }
 
 .stat-label {
