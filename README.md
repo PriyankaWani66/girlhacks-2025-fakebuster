@@ -89,17 +89,23 @@ APIs available at:
 ![Image Detection – Auto Tag](screenshots/popup-toggle.jpg)
 
 - Tag overlay on flagged images  
+
 Example 1:
 ![Image Detection – Auto Tag](screenshots/image-detection-1.jpg)
+
 
 Example 2:
 ![Image Detection – Auto Tag](screenshots/image-detection-2.jpg)
 
 - Text detection result popup 
+
 Example 1:
+
 ![Text Detection – Right Click](screenshots/text-detection-1.jpg)
 
+
 Example 2:
+
 ![Text Detection – Right Click](screenshots/text-detection-2.jpg) 
 
 🧰 Tech Stack
