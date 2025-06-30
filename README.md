@@ -31,11 +31,10 @@ Fake-Buster/
 ├── prediction/                 # FastAPI backend
 │   ├── main.py
 │   ├── requirements.txt
+│   ├── .env                    # Local environment variables (excluded from Git)
 │
-├── .env                        # Local environment variables (excluded from Git)
 └── venv/                       # Optional virtual environment
 ```
-
 
 🛠️ Setup Instructions
 
@@ -47,6 +46,7 @@ git clone https://github.com/PriyankaWani66/girlhacks-2025-fakebuster.git
 2️⃣ Backend Setup (FastAPI)
 Install dependencies:
 ```bash
+cd prediction
 pip install -r requirements.txt
 ```
 
@@ -85,14 +85,21 @@ APIs available at:
 
 📸 Screenshots
 - Extension popup with on/off toggle 
+
 ![Image Detection – Auto Tag](screenshots/popup-toggle.jpg)
 
 - Tag overlay on flagged images  
+Example 1:
 ![Image Detection – Auto Tag](screenshots/image-detection-1.jpg)
+
+Example 2:
 ![Image Detection – Auto Tag](screenshots/image-detection-2.jpg)
 
 - Text detection result popup 
+Example 1:
 ![Text Detection – Right Click](screenshots/text-detection-1.jpg)
+
+Example 2:
 ![Text Detection – Right Click](screenshots/text-detection-2.jpg) 
 
 🧰 Tech Stack
