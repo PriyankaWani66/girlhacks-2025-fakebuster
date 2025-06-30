@@ -95,6 +95,7 @@ Example 1:
 
 
 Example 2:
+
 ![Image Detection – Auto Tag](screenshots/image-detection-2.jpg)
 
 - Text detection result popup 
