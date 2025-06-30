@@ -1,13 +1,14 @@
-GirlHacks Hackathon 2025 Project
-🧠 Fake Buster – Chrome Extension to Detect Deepfakes & AI-Generated Text  
+# 🏆 GirlHacks Hackathon 2025 Project– 3rd Place Winner
+
+### 🧠 Fake Buster – Chrome Extension to Detect Deepfakes & AI-Generated Text  
 👉 [View the source code on GitHub](https://github.com/PriyankaWani66/girlhacks-2025-fakebuster)
 
 
-📌 Overview  
+### 📌 Overview  
 Fake Buster is a privacy-first Chrome extension designed to detect AI-generated images and text in real time as users browse the web. With seamless image scanning and right-click text detection, users are empowered with lightweight, non-intrusive alerts powered by state-of-the-art APIs.
 
 
-✨ Key Features  
+### ✨ Key Features  
 - 🔄 Real-Time Image Detection: Instantly flags AI-generated images as you scroll — no interaction required.  
 - ✍️ Text Detection via Right-Click: Highlight and analyze suspicious content with just two clicks.  
 - 🔕 Discreet Alerts: Clean UI shows detection results with confidence scores, without disrupting the browsing experience.  
@@ -17,7 +18,7 @@ Fake Buster is a privacy-first Chrome extension designed to detect AI-generated 
   - No user data is collected or stored  
 
 
-🗂️ Project Structure
+### 🗂️ Project Structure
 ```
 Fake-Buster/
 │
@@ -36,7 +37,7 @@ Fake-Buster/
 └── venv/                       # Optional virtual environment
 ```
 
-🛠️ Setup Instructions
+### 🛠️ Setup Instructions
 
 1️⃣ Clone the Repository
 ```bash
@@ -73,7 +74,7 @@ APIs available at:
 4. The Fake Buster icon will appear in your Chrome toolbar
 
 
-🚀 How It Works
+### 🚀 How It Works
 
 - 🖼️ Image Detection: Scroll through any webpage — images are scanned automatically, and flagged deepfakes are labeled with tags like `⚠️ 93% likely AI`.  
 - ✍️ Text Detection: Highlight suspicious text → right-click → “Check if AI-generated.”  
@@ -83,7 +84,7 @@ APIs available at:
 > Note: Detection is 'disabled by default' and must be enabled from the extension popup.
 
 
-📸 Screenshots
+### 📸 Screenshots
 - Extension popup with on/off toggle 
 
 ![Image Detection – Auto Tag](screenshots/popup-toggle.jpg)
@@ -109,7 +110,7 @@ Example 2:
 
 ![Text Detection – Right Click](screenshots/text-detection-2.jpg) 
 
-🧰 Tech Stack
+### 🧰 Tech Stack
 
 | Layer       | Technologies Used                          |
 |-------------|---------------------------------------------|
@@ -118,14 +119,14 @@ Example 2:
 | AI Services | Sightengine (images), HuggingFace Inference (text) |
 
 
-🔮 Future Enhancements  
+### 🔮 Future Enhancements  
 - 🎥 Video deepfake detection  
 - 📊 User history dashboard  
 - 📱 Mobile browser support  
 - 💻 On-device ML inference for offline detection  
 
 
-👥 Team Fake Buster  
+### 👥 Team Fake Buster  
 - Priyanka Pramod Wani – Student at Missouri S&T  
 - Deeptika Kannan – Software Developer at Kiowa Corporation  
 - Sai Sravani Sure – Student at University of Michigan  
