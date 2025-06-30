@@ -1,9 +1,7 @@
 console.log("✅ Fake Buster: content.js loaded");
 
-// ===================
-// IMAGE DETECTION
-// ===================
 
+// IMAGE DETECTION
 
 async function detectImageAI(imgUrl) {
     return new Promise((resolve) => {
@@ -89,10 +87,7 @@ window.addEventListener("scroll", () => {
   }, 1000); // adjust delay as needed
 });
 
-
-// ===================
 // TEXT DETECTION POPUP (From context menu trigger)
-// ===================
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "showResult") {

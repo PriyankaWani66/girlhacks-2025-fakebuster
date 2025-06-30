@@ -12,13 +12,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     if (!selectedText) return;
 
     try {
-      // ---------------------------
-      // MOCK RESULT FOR TESTING
-      // const resultText = "The text is 95% likely AI-generated";
-      // ---------------------------
-
-      // 🟢 UNCOMMENT BELOW TO USE API
-      
+    
       const response = await fetch("http://127.0.0.1:8000/detect-text", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -32,7 +26,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
       let resultText = data.result;
       if (score >= 80) {
-        resultText += ` (Model: ${data.LLM}) ⚠️`;  // Add warning symbol
+        resultText += ` (Model: ${data.LLM}) ⚠️`; 
       }
 
       // Send to content.js
@@ -70,7 +64,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ score: 0.5 }); // fallback on error
       });
 
-    return true; // 💥 keeps message channel open for async sendResponse
+    return true; // keeps message channel open for async sendResponse
   }
 });
 
